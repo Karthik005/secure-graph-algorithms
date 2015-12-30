@@ -40,7 +40,7 @@ def gen_shares(n, t, s, N):
 	# Generate the encoding polynomial
 	f = gen_rand_poly(t, s, N)
 	# Generate each party's share
-	shares = [(i, f(i)) for i in range(0, n)]
+	shares = [(i, f(i)) for i in range(1, n+1)]
 	return shares
 
 
@@ -61,7 +61,9 @@ def interpolate_poly(sh, N):
 			# Lagrangian interpolation
 			term = s[1]
 			for shr in other_sh:
-				term = term * (a-shr[0]) / (s[0]-shr[0])
+				# NOTE: Since finding modulo inverse takes a while,
+				# floating point arithmetic is used as an approximation
+				term = term * float((a-shr[0])) / (s[0]-shr[0])
 			terms.append(term)
 		return sum(terms) % N
 	return inner_poly
@@ -70,11 +72,12 @@ def interpolate_poly(sh, N):
 # Test the sharing scheme for all numbers until any prime N
 t = 3
 N = 313
+offset = 2
 for i in range(0, N):
 	secret = i
 	sh = gen_shares(6, t, secret, N)
-	f = interpolate_poly(sh[:t+2], N)
+	f = interpolate_poly(sh[offset:t+1+offset], N)
 	if f(0) == secret:
-		print "PASS"
+		print "PASS", f(0)
 	else:
-		print "FAIL, " + str(i) + ", " + str(f(0))
+		print "FAIL, " + str(i) + ", " + str(f(0)) + ", " + str(f(0)-i)
