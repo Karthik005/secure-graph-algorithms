@@ -71,7 +71,7 @@ def interpolate_poly(sh, N):
 
 # Test the sharing scheme for all numbers until any prime N
 t = 3
-N = 313
+N = 104059
 offset = 2
 for i in range(0, N):
 	secret = i
