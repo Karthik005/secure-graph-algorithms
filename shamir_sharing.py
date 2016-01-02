@@ -70,6 +70,7 @@ def interpolate_poly(sh, N):
 
 
 # Test the sharing scheme for all numbers until any prime N
+'''
 t = 3
 N = 104059
 offset = 2
@@ -81,3 +82,4 @@ for i in range(0, N):
 		print "PASS", f(0)
 	else:
 		print "FAIL, " + str(i) + ", " + str(f(0)) + ", " + str(f(0)-i)
+'''
