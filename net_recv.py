@@ -4,6 +4,7 @@
 
 import sys, socket
 from shamir_sharing import *
+from time import sleep
 
 '''
  Function to connect to the dealer on port = p_id
@@ -16,6 +17,48 @@ def connect_to_dealer(dealer_ip, p_id):
 	sock.listen(2)
 	d, address = sock.accept()
 	return d
+
+'''
+ Function to set up servers to listen to parties with ID < p_id, and sockets
+ connected to parties with ID > p_id
+  @arg		: party ID, all party IPs
+  @returns	: socket objects connected to other parties
+'''
+def connect_to_parties(p_id, ip):
+	parties = []
+	# Listen to requests from p_j where j < i
+	for i in range(1, p_id):
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		sock.bind((ip[i], 9000+(p_id*10 + i)))
+		sock.listen(2)
+		conn, address = sock.accept()
+		parties.append(conn)
+		print "Connected to party", i
+
+	# Wait for a byte from p_(i-1) to signal that all parties are waiting
+	# for p_i's request to connect
+	if p_id > 1:
+		parties[-1].recv(1)
+
+	# Fill in a null socket for p_i
+	parties.append(None)
+
+	sleep(1)
+
+	# Send requests to other parties p_j, j > i
+	for i in range(p_id+1, len(ip)+1):
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		sock.connect((ip[i-1], 9000+(i*10 + p_id)))
+		print "Connected to party", i
+		parties.append(sock)
+
+	# Signal to p_(i+1) that p_i's connection round is over
+	if len(ip) > p_id:
+		parties[p_id].send(' ')
+		
+	return parties
 
 '''
  Receive shares from the dealer
@@ -57,3 +100,10 @@ if __name__ == '__main__':
 		for n in m:
 			print n,
 		print ' '
+
+	print 'Attempting to connect to other parties'
+	ip = []
+	for i in open('addresses'):
+		ip.append(i[:-1])
+	parties = connect_to_parties(p_id, ip)
+	print parties
