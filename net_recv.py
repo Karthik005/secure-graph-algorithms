@@ -4,6 +4,7 @@
 
 import sys, socket
 from shamir_sharing import *
+from net_share import int_to_bytes
 from time import sleep
 
 '''
@@ -41,8 +42,14 @@ def connect_to_parties(p_id, ip):
 	if p_id > 1:
 		parties[-1].recv(1)
 
+	class null_socket:
+		def recv(self, a):
+			return ' '
+		def send(self, a):
+			return None
+
 	# Fill in a null socket for p_i
-	parties.append(None)
+	parties.append(null_socket())
 
 	sleep(1)
 
@@ -60,14 +67,62 @@ def connect_to_parties(p_id, ip):
 		
 	return parties
 
+
 '''
  Receive shares from the dealer
   @arg		: dealer socket, no. of bytes to be received
   @returns	: integer share
 '''
-def recv_share(dealer, nB):
-	share = dealer.recv(nB)
+def recv_share(party, nB):
+	share = party.recv(nB)
 	return int(share.encode('hex'), 16)
+
+'''
+ Receive all shares from other parties
+  @arg		: list of parties, bytes per share
+  @returns	: list of shares
+'''
+def recv_shares(parties, nB):
+	sh = []
+	party_id = 1
+	for party in parties:
+		sh.append((party_id, recv_share(party, nB)))
+		party_id = party_id + 1
+	return sh
+
+'''
+ Send share to other parties
+  @arg		: list of parties, share, no of bytes
+  @returns	: list of shares
+'''
+def send_share(parties, share, nB):
+	for party in parties:
+		party.send(int_to_bytes(share, nB))
+
+'''
+ Reconstruct graph of specific length by combining shares
+  @arg		: list of parties, own shares of graph, party ID,
+  		  bytes per share, N
+  @returns	: adjacency matrix
+'''
+def reconstruct_graph(parties, G_sh, p_id, nB, N):
+	# Send all shares to all parties
+	for row in G_sh:
+		for val in row:
+			send_share(parties, val, nB)
+	# Receive all shares from other parties
+	G = []
+	rows, columns = len(G_sh), len(G_sh[0])
+	for i in range(0, rows):
+		row = []
+		for j in range(0, columns):
+			sh = recv_shares(parties, nB)
+			sh[p_id-1] = (p_id, G_sh[i][j])
+			f = interpolate_poly(sh, N)
+			row.append(f(0))
+		G.append(row)
+	return G
+
 
 '''
  Receive a graph of specific dimensions from the dealer
@@ -94,9 +149,10 @@ if __name__ == '__main__':
 	nB = 20
 	
 	dealer = connect_to_dealer(d_ip, p_id)
-	G = recv_graph(dealer, r, c, nB)
+	G_sh = recv_graph(dealer, r, c, nB)
 
-	for m in G:
+	print 'private shares:'
+	for m in G_sh:
 		for n in m:
 			print n,
 		print ' '
@@ -106,4 +162,13 @@ if __name__ == '__main__':
 	for i in open('addresses'):
 		ip.append(i[:-1])
 	parties = connect_to_parties(p_id, ip)
-	print parties
+	#print parties
+
+	print 'Reconstruct graph ovver the network'
+	N = 104059
+	G = reconstruct_graph(parties, G_sh, p_id, nB, N)
+
+	for m in G:
+		for n in m:
+			print n,
+		print ' '
