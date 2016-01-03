@@ -27,14 +27,14 @@ def connect_to_dealer(dealer_ip, p_id):
 def connect_to_parties(p_id, ip):
 	parties = []
 	# Listen to requests from p_j where j < i
-	for i in range(1, p_id):
+	for i in range(0, p_id-1):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.bind((ip[i], 9000+(p_id*10 + i)))
+		sock.bind((ip[i], 9000+(p_id*10 + (i+1))))
 		sock.listen(2)
 		conn, address = sock.accept()
 		parties.append(conn)
-		print "Connected to party", i
+		print "Connected to party", (i+1)
 
 	# Wait for a byte from p_(i-1) to signal that all parties are waiting
 	# for p_i's request to connect
@@ -47,11 +47,11 @@ def connect_to_parties(p_id, ip):
 	sleep(1)
 
 	# Send requests to other parties p_j, j > i
-	for i in range(p_id+1, len(ip)+1):
+	for i in range(p_id, len(ip)):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.connect((ip[i-1], 9000+(i*10 + p_id)))
-		print "Connected to party", i
+		sock.connect((ip[i], 9000+((i+1)*10 + p_id)))
+		print "Connected to party", (i+1)
 		parties.append(sock)
 
 	# Signal to p_(i+1) that p_i's connection round is over
