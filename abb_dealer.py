@@ -5,21 +5,22 @@
 
 import net_share as ns
 import sys
+from time import sleep
 
-def share_secret(x):
+def share_secrets(secrets):
 	t = 1
 	N = 104059
 	# Create sockets
 	parties = ns.connection_phase()
-	print "sharing secrect: "+str(x)
-	sh = ns.gen_shares(3, t, x, N)
-	print sh
-	ns.distribute_secret(sh, parties, 20)
+	for x in secrets:
+		print "sharing secrect: "+str(x)
+		sh = ns.gen_shares(3, t, x, N)
+		print sh
+		ns.distribute_secret(sh, parties, 20)
 	return 
 
 if __name__ == '__main__':
 	x = int(sys.argv[1])
 	y = int(sys.argv[2])
-	share_secret(x)
-	share_secret(y)
+	share_secrets([x,y])
 

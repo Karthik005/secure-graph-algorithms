@@ -45,7 +45,7 @@ def gen_vandermonde(n):
 	@arg		: number of parties
 	@returns 	: nxn vandermonde matrix
 	'''
-	vandermonde = np.array([[j**i for j in range(1,n+1)] for i in range(1,n+1)])
+	vandermonde = np.array([[j**i for j in range(0,n)] for i in range(0,n)])
 	return vandermonde
 
 def gen_reduction_array(n, t):
@@ -54,9 +54,11 @@ def gen_reduction_array(n, t):
 	@arg		: number of parties, number of corrupted parites (max)
 	@returns 	: degree reduction array
 	'''
-	trunc_arr = np.concatenate(np.ones(t),np.zeros(n-t))
+	trunc_arr = np.concatenate((np.ones(t),np.zeros(n-t)))
 	B = gen_vandermonde(n)
 	B_inv = np.linalg.inv(B)
+	print B
+	print B_inv
 	red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
 	return red_arr
 
@@ -70,18 +72,24 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 
 	# generate self share
 	x_self,y_self = mult_shares
-	z_self = (self_pid, x_self[1]*y_self[1]) 
+	z_self = (self_pid, (x_self[1]*y_self[1])%N) 
 
+	print "z val: ", z_self
 	#randomisation step
 	g_shares = ss.gen_shares(n, t, 0, N)
 	ns.distribute_secret(g_shares, socket_list, nB)
 	g_recvd_shares = nr.recv_shares(socket_list, nB)
 	g_recvd_shares[self_pid-1] = g_shares[self_pid-1]
 	g_sum = sum([g_share[1] for g_share in g_shares])%N
-	z_tilde = z_self[1]+g_sum
+	z_tilde = (z_self[1]+g_sum)%N
+
+
+	print "z_tilde val: ", z_tilde
 
 	# degree reduction step
 	red_arr = gen_reduction_array(n, t)
+	print "red_arr: ", red_arr
+
 	self_mult_share = z_tilde*red_arr[self_pid-1]
 
 	return (self_pid, self_mult_share)
