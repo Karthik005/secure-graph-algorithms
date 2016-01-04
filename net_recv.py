@@ -99,6 +99,23 @@ def send_share(parties, share, nB):
 	for party in parties:
 		party.send(int_to_bytes(share, nB))
 
+
+
+def reconstruct_secret(parties, self_share, self_pid, nB, N):
+	'''
+	reconstruct the secret by interpolation
+	@arg		: list of parties, share, pid, number of bytes, N
+	@returns	: list of shares
+	'''
+	send_share(parties, self_share, nB)
+	recvd_shares = recv_shares(parties, nB)
+	recvd_shares[self_pid-1] = (self_pid, self_share)
+	f = interpolate_poly(recvd_shares, N)
+	return f(0)
+
+
+
+
 '''
  Reconstruct graph of specific length by combining shares
   @arg		: list of parties, own shares of graph, party ID,

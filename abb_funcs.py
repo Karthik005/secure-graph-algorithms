@@ -22,7 +22,7 @@ import net_recv as nr
 
 
 
-def abb_add(self_pid, socket_list, addend_shares, N):
+def add(self_pid, socket_list, addend_shares, N):
 	'''
 	add shares listed in addend_shares
 	@arg		: self party id, list of sockets, list of shares to be added, prime base
@@ -60,7 +60,7 @@ def gen_reduction_array(n, t):
 	red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
 	return red_arr
 
-def abb_mult(self_pid, socket_list, mult_shares, t, N, nB):
+def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	'''
 	multiply shares listed in mult_shares
 	@arg		: self party id, list of party sockets, tuple of shares to be multiplied, prime base, share size
@@ -73,7 +73,7 @@ def abb_mult(self_pid, socket_list, mult_shares, t, N, nB):
 	z_self = (self_pid, x_self[1]*y_self[1]) 
 
 	#randomisation step
-	g_shares = ss.gen_shares(n, 2*t, 0, N)
+	g_shares = ss.gen_shares(n, t, 0, N)
 	ns.distribute_secret(g_shares, socket_list, nB)
 	g_recvd_shares = nr.recv_shares(socket_list, nB)
 	g_recvd_shares[self_pid-1] = g_shares[self_pid-1]
