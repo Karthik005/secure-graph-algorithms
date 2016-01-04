@@ -6,11 +6,10 @@
 import net_share as ns
 import sys
 
-def share_secret(x):
+def share_secret(x, parties):
 	t = 1
 	N = 104059
 	# Create sockets
-	parties = ns.connection_phase()
 	print "sharing secrect: "+str(x)
 	sh = ns.gen_shares(3, t, x, N)
 	print sh
@@ -20,6 +19,7 @@ def share_secret(x):
 if __name__ == '__main__':
 	x = int(sys.argv[1])
 	y = int(sys.argv[2])
-	share_secret(x)
-	share_secret(y)
+	parties = ns.connection_phase()
+	share_secret(x, parties)
+	share_secret(y, parties)
 
