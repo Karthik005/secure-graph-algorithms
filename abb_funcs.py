@@ -64,7 +64,7 @@ def gen_coeff_arr(n, N):
 	# return red_arr
 	B = gen_vandermonde(n)
 	B_inv = mmh.find_inv_mat(B, N)
-	print np.array(B_inv[0])
+	# print np.array(B_inv[0])
 	return (np.array(B_inv[0])).flatten()
 
 	
@@ -81,7 +81,7 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	x_self,y_self = mult_shares
 	z_self = (self_pid, (x_self*y_self)%N) 
 
-	print "z val: ", z_self
+	# print "z val: ", z_self
 	#randomisation step
 	h_shares = ss.gen_shares(n, t, z_self[1], N)
 	ns.distribute_secret(h_shares, socket_list, nB)
@@ -90,10 +90,9 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	h_recvd_shares_vals = [i[1] for i in h_recvd_shares]
 
 	h_recvd_vals = np.array(h_recvd_shares_vals)
-	print h_recvd_shares
 	coeff_arr = gen_coeff_arr(n,N)
 
-	print "coeff_arr: ", coeff_arr
+	# print "coeff_arr: ", coeff_arr
 	self_mult_share = np.dot(h_recvd_vals, coeff_arr)
 
 	return (self_pid, self_mult_share)
@@ -128,7 +127,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 		r_a = nr.recv_share(party_A, nB)
 		r_b = nr.recv_share(party_B, nB)
 
-	print r_a, r_b
+	# print r_a, r_b
 
 
 	r = mult(self_pid, socket_list, (r_a, r_b), t, N, nB)[1]
@@ -151,15 +150,15 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	if self_pid == A:
 		u_shares_recvd = nr.recv_shares(socket_list, nB)
 		u_shares_recvd[A-1] = (A,u)
-		f = ss.interpolate_poly(recvd_shares, N)
+		f = ss.interpolate_poly(u_shares_recvd, N)
 		u_val = f(0)
-		j_u_val = jacobi(u_val,N)
+		j_u_val = jacobi(int(u_val),N)
 	
 	else:
 		nr.send_share([party_A], u, nB)
 
 	if self_pid == B:
-		j_s_val = jacobi(s_val, N)
+		j_s_val = jacobi(int(s_val), N)
 
 	# share jacobi symbols
 	if self_pid == A:
@@ -182,7 +181,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	j_fin = mult(self_pid, socket_list, (j_u, j_s), t, N, nB)[1]
 	j_tilde = add(self_pid, socket_list, (j_fin, 1), N)[1]
 
-	fin_share = j_tilde*mmh.find_inv_mod(2,N)
+	fin_share = j_tilde
 	return (self_pid, fin_share)
 
 # def abb_compare(self_pid, socket_list, mult_shares, t, N, nB):
