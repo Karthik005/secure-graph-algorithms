@@ -14,6 +14,7 @@ import net_recv as nr
 import mod_math_helpers as mmh
 from random import randint
 from libnum import jacobi
+from math import log, floor
 
 # def signal_done_proc(prev_party,nxt_party, sig):
 # 	if prev_party:
@@ -23,6 +24,13 @@ from libnum import jacobi
 # 				soh.send_sig(nxt_party, sig)
 # 			return
 
+'''
+ Function to simply negate a share
+  @arg		: share of x, N
+  @returns	: share of -x
+'''
+def neg(sh, N):
+	return (sh[0], N-sh[1])
 
 
 def add(self_pid, socket_list, addend_shares, N):
@@ -33,7 +41,7 @@ def add(self_pid, socket_list, addend_shares, N):
 	'''
 
 	num_parties = len(socket_list)
-	sum_of_shares = sum([addend_share for addend_share in addend_shares])%N
+	sum_of_shares = sum([addend_share[1] for addend_share in addend_shares])%N
 
 	# done_msg = "ADDDONE"
 	# nxt_party = socket_list[self_pid] if self_pid < num_parties else None
@@ -78,7 +86,7 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	n = len(socket_list)
 
 	# generate self share
-	x_self,y_self = mult_shares
+	x_self,y_self = mult_shares[0][1], mult_shares[1][1]
 	z_self = (self_pid, (x_self*y_self)%N) 
 
 	# print "z val: ", z_self
@@ -108,6 +116,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	'''
 	n = len(socket_list)
 	x,y = comp_shares
+	x,y = x[1], y[1]
 	d = x-y
 
 	A,B = act_parties # index of contributing parties
@@ -130,7 +139,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	# print r_a, r_b
 
 
-	r = mult(self_pid, socket_list, (r_a, r_b), t, N, nB)[1]
+	r = mult(self_pid, socket_list, ((self_pid, r_a), (self_pid, r_b)), t, N, nB)[1]
 
 	# obtain random input s
 	if self_pid == B:
@@ -142,9 +151,9 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	else:
 		s = nr.recv_share(party_B, nB)
 
-	u = mult(self_pid, socket_list, (r, r), t, N, nB)[1]
-	u = add(self_pid, socket_list, (d, u), N)[1]
-	u = mult(self_pid, socket_list, (u, s), t, N, nB)[1]
+	u = mult(self_pid, socket_list, ((self_pid, r), (self_pid, r)), t, N, nB)[1]
+	u = add(self_pid, socket_list, ((None, d), (None, u)), N)[1]
+	u = mult(self_pid, socket_list, ((self_pid, u), (self_pid, s)), t, N, nB)[1]
 
 	# reconstruct t (A) and find jacobi of t and s
 	if self_pid == A:
@@ -178,14 +187,143 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 		j_s = nr.recv_share(party_B, nB)
 
 	# calculate jacobi symbol of d+r^2
-	j_fin = mult(self_pid, socket_list, (j_u, j_s), t, N, nB)[1]
-	j_tilde = add(self_pid, socket_list, (j_fin, 1), N)[1]
+	j_fin = mult(self_pid, socket_list, ((self_pid, j_u), (self_pid, j_s)), t, N, nB)[1]
+	j_tilde = add(self_pid, socket_list, ((None,j_fin), (None,1)), N)[1]
 
 	fin_share = j_tilde
 	return (self_pid, fin_share)
 
-# def abb_compare(self_pid, socket_list, mult_shares, t, N, nB):
 
+'''
+ Implementation of Toft's comparison protocol
+  @arg		: self party id, list of party sockets, tuple of shares to be compared, prime base,
+  		  share size, pids of contributing parties
+  @returns	: secret share of boolean output x > y
+'''
+def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
+	x, y = comp_shares
+	n = len(socket_list)
+	print comp_shares, l
+	# Check if comparing single bit values. If so, answer is trivial
+	if l == 1:
+		# `gt' encodes x > y
+		gt = mult(self_pid, socket_list, comp_shares, t, N, nB)
+		gt = add(self_pid, socket_list, [x, neg(gt, N)], N)
+		# `eq' encodes x == y NOTE: Improve this!
+		eq = test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties)
+		# Return gt*eq
+		return mult(self_pid, socket_list, [gt, eq], t, N, nB)
 
+	# Note here that unlike equality testing, the roles of the active
+	# parties are not the same; the first is Alice, and the second is
+	# Bob
+	alice, bob = act_parties
+	# Choose `l' to be the power of 2 having half the bits of N
+	#l = 2**(log(N) / (2*log(2))
+	#l = 2**2 % N
+	z = add(self_pid, socket_list, [(None,2**l), x, neg(y,N)], N)
+	if self_pid == bob:
+		# Choose random r
+		r = randint(1,N-1)
+		# Generate and distribute shares of this random number
+		r_sh = ss.gen_shares(n, t, r, N)
+		ns.distribute_secret(r_sh, socket_list, nB)
+		# Calculate Bob's share of `c' and send it to Alice
+		c = add(self_pid, socket_list, [r_sh[self_pid-1], z], N)[1]
+		nr.send_share([socket_list[alice-1]], c, nB)
+		c = (self_pid, c)
+		# Find r_bar, r_bot and r_top and share them
+		r_bar = r % (2**l)
+		r_bar_sh = ss.gen_shares(n, t, r_bar, N)
+		ns.distribute_secret(r_bar_sh, socket_list, nB)
 
+		r_bot = r % (2**(l/2))
+		r_bot_sh = ss.gen_shares(n, t, r_bot, N)
+		ns.distribute_secret(r_bot_sh, socket_list, nB)
 
+		r_top = floor(r / (2**(l/2))) % 2**(l/2)
+		r_top_sh = ss.gen_shares(n, t, r_top, N)
+		ns.distribute_secret(r_top_sh, socket_list, nB)
+
+		# Receive shares of c_bar, _bot, _top
+		c_bar = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+		c_bot = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+		c_top = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+
+		# Replace clear values of `r', bar, bot, top with shares
+		# This is done for consistency of convention across parties
+		r = r_sh[self_pid - 1]
+		r_bar = r_bar_sh[self_pid - 1]
+		r_bot = r_bot_sh[self_pid - 1]
+		r_top = r_top_sh[self_pid - 1]
+
+	elif self_pid == alice:
+		# Receive share of `r' from Bob
+		r = nr.recv_share(socket_list[bob-1], nB)
+		# Calculate own share of `c'
+		#c_own = (add(self_pid, socket_list, [(self_pid, r), x, neg(y, N)], N)[1] + 2**l) % N
+		c_own = add(self_pid, socket_list, [z,(None,r)], N)[1]
+		# Reconstruct `c'
+		c = nr.reconstruct_secret(socket_list, (self_pid, c_own), self_pid, nB, N)
+		# Find c_bar, c_bot and c_top and share them
+		c_bar = c % (2**l)
+		c_bar_sh = ss.gen_shares(n, t, c_bar, N)
+		ns.distribute_secret(c_bar_sh, socket_list, nB)
+
+		c_bot = c % (2**(l/2))
+		c_bot_sh = ss.gen_shares(n, t, c_bot, N)
+		ns.distribute_secret(c_bot_sh, socket_list, nB)
+
+		c_top = floor(c / (2**(l/2))) % 2**(l/2)
+		c_top_sh = ss.gen_shares(n, t, c_top, N)
+		ns.distribute_secret(c_top_sh, socket_list, nB)
+
+		# Receive shares of r_bar, _bot, _top
+		r_bar = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+		r_bot = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+		r_top = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+
+		# Replace clear values of `c', bar, bot, top with shares
+		# This is done for consistency of convention across parties
+		c = (self_pid, c_own)
+		c_bar = c_bar_sh[self_pid - 1]
+		c_bot = c_bot_sh[self_pid - 1]
+		c_top = c_top_sh[self_pid - 1]
+
+	else:
+		# Receive share of `r' from Bob
+		r = nr.recv_share(socket_list[bob-1], nB)
+		# Calculate own share of `c' and send to Alice
+		#c = (add(self_pid, socket_list, [(self_pid, r), x, neg(y, N)], N)[1] + 2**l) % N
+		c = add(self_pid, socket_list, [z,(None,r)], N)[1]
+		nr.send_share([socket_list[alice-1]], c, nB)
+		# Receive shares of r_bar, _bot, _top
+		r_bar = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+		r_bot = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+		r_top = (self_pid, nr.recv_share(socket_list[bob-1], nB))
+		# Receive shares of c_bar, _bot, _top
+		c_bar = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+		c_bot = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+		c_top = (self_pid, nr.recv_share(socket_list[alice-1], nB))
+
+	# Common steps carried out by all parties
+
+	# Check if r_top = c_top, store in boolean `b'
+	b = test_equality(self_pid, socket_list, [r_top, c_top], t, N, nB, act_parties)
+	# Compute c_tilde = b ? c_bot:c_top
+	c_tilde = add(self_pid, socket_list, [c_bot, neg(c_top, N)], N)
+	c_tilde = mult(self_pid, socket_list, [c_tilde, b], t, N, nB)
+	c_tilde = add(self_pid, socket_list, [c_tilde, c_top], N)
+	# Compute r_tilde = b ? r_bot:r_top
+	r_tilde = add(self_pid, socket_list, [r_bot, neg(r_top, N)], N)
+	r_tilde = mult(self_pid, socket_list, [r_tilde, b], t, N, nB)
+	r_tilde = add(self_pid, socket_list, [r_tilde, r_top], N)
+
+	# Compute u = 1 - (c_tilde>=r_tilde) recursively
+	u = 1 - compare(self_pid, socket_list, [c_tilde, r_tilde], t, N, nB, act_parties, l/2)[1]
+
+	# Last few steps, local
+	z_bar = add(self_pid, socket_list, [c_bar, neg(r_bar, N), (None, (2**l)*u)], N)
+	z_l = add(self_pid, socket_list, [z, z_bar], N) * mmh.find_inv_mod(2**l, N)
+
+	return z_l
