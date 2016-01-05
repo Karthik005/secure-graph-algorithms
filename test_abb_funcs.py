@@ -37,4 +37,4 @@ if __name__ == '__main__':
 	ip = []
 	for i in open('addresses'):
 		ip.append(i[:-1])
-	test_abb_add(sys.argv[1], int(sys.argv[2]), ip, 1)
+	test_abb_mult(sys.argv[1], int(sys.argv[2]), ip, 1)

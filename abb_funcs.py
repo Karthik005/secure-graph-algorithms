@@ -11,6 +11,7 @@ import shamir_sharing as ss
 import numpy as np
 import net_share as ns
 import net_recv as nr
+import mod_math_helpers as mmh
 
 # def signal_done_proc(prev_party,nxt_party, sig):
 # 	if prev_party:
@@ -45,22 +46,26 @@ def gen_vandermonde(n):
 	@arg		: number of parties
 	@returns 	: nxn vandermonde matrix
 	'''
-	vandermonde = np.array([[j**i for j in range(0,n)] for i in range(0,n)])
+	vandermonde = np.array([[i**(j-1) for j in range(1,n+1)] for i in range(1,n+1)])
 	return vandermonde
 
-def gen_reduction_array(n, t):
+def gen_coeff_arr(n, N):
 	'''
 	generates reduction array
 	@arg		: number of parties, number of corrupted parites (max)
 	@returns 	: degree reduction array
 	'''
-	trunc_arr = np.concatenate((np.ones(t),np.zeros(n-t)))
+	# trunc_arr = np.concatenate((np.ones(t),np.zeros(n-t)))
+	# print B
+	# print B_inv
+	# red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
+	# return red_arr
 	B = gen_vandermonde(n)
-	B_inv = np.linalg.inv(B)
-	print B
-	print B_inv
-	red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
-	return red_arr
+	B_inv = mmh.inversematrix(B, N)
+	print np.array(B_inv[0])
+	return (np.array(B_inv[0])).flatten()
+
+	
 
 def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	'''
@@ -76,21 +81,18 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 
 	print "z val: ", z_self
 	#randomisation step
-	g_shares = ss.gen_shares(n, t, 0, N)
-	ns.distribute_secret(g_shares, socket_list, nB)
-	g_recvd_shares = nr.recv_shares(socket_list, nB)
-	g_recvd_shares[self_pid-1] = g_shares[self_pid-1]
-	g_sum = sum([g_share[1] for g_share in g_shares])%N
-	z_tilde = (z_self[1]+g_sum)%N
+	h_shares = ss.gen_shares(n, t, z_self[1], N)
+	ns.distribute_secret(h_shares, socket_list, nB)
+	h_recvd_shares = nr.recv_shares(socket_list, nB)
+	h_recvd_shares[self_pid-1] = h_shares[self_pid-1]
+	h_recvd_shares_vals = [i[1] for i in h_recvd_shares]
 
+	h_recvd_vals = np.array(h_recvd_shares_vals)
+	print h_recvd_shares
+	coeff_arr = gen_coeff_arr(n,N)
 
-	print "z_tilde val: ", z_tilde
-
-	# degree reduction step
-	red_arr = gen_reduction_array(n, t)
-	print "red_arr: ", red_arr
-
-	self_mult_share = z_tilde*red_arr[self_pid-1]
+	print "coeff_arr: ", coeff_arr
+	self_mult_share = np.dot(h_recvd_vals, coeff_arr)
 
 	return (self_pid, self_mult_share)
 
