@@ -110,9 +110,11 @@ def reconstruct_secret(parties, self_share, self_pid, nB, N):
 	send_share(parties, self_share[1], nB)
 	recvd_shares = recv_shares(parties, nB)
 	recvd_shares[self_pid-1] = self_share
-	print "received shares: ", recvd_shares
+	# print "received shares: ", recvd_shares
 	f = interpolate_poly(recvd_shares, N)
 	return f(0)
+
+
 
 
 
