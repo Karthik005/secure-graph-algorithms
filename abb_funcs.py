@@ -61,7 +61,7 @@ def gen_coeff_arr(n, N):
 	# red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
 	# return red_arr
 	B = gen_vandermonde(n)
-	B_inv = mmh.inversematrix(B, N)
+	B_inv = mmh.find_inv_mat(B, N)
 	print np.array(B_inv[0])
 	return (np.array(B_inv[0])).flatten()
 
