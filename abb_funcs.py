@@ -108,7 +108,8 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	'''
 	n = len(socket_list)
 	x,y = comp_shares
-	d = x-y
+	d = N-(x-y) if x-y <0 else x-y
+	# d = x-y
 
 	A,B = act_parties # index of contributing parties
 	party_A = socket_list[A-1]
