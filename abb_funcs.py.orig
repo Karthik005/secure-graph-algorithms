@@ -107,38 +107,23 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	return (self_pid, self_mult_share % N)
 
 
-def rec_mult(self_pid, socket_list, mult_shares, t, N, nB ):
-	'''
-	calculate recursively the product of all shares in mult_shares
-	@arg		: self party id, list of party sockets, list of shares to be multiplied, prime base,
-				  share size
-	@returns 	: share of product
-	'''
-	num_shares = len(mult_shares)
-	if num_shares %2 == 0:
-		if num_shares == 2:
-			return mult(self_pid, socket_list, mult_shares, t, N, nB)
-		else:
-			k_1 = rec_mult(self_pid, socket_list, mult_shares[:num_shares/2], t, N, nB)
-			k_2 = rec_mult(self_pid, socket_list, mult_shares[num_shares/2:], t, N, nB)
-			return mult(self_pid, socket_list, (k_1, k_2), t, N, nB)
-	else:
-		k_1 = rec_mult(self_pid, socket_list, mult_shares[:-1], t, N, nB)
-		k_2 = mult_shares[-1]
-		return mult(self_pid, socket_list, (k_1, k_2), t, N, nB)
 
-
-def test_equality_once(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
+def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	'''
-	test equality of two shared secrets, can give false positives with probability 1/2
+	test equality of two shared secrets
 	@arg		: self party id, list of party sockets, tuple of shares to be compared, prime base,
 				  share size, pids of contributing parties
-	@returns 	: share of equality boolean x==y
+	@returns 	: share of equality boolean
 	'''
 	n = len(socket_list)
 	x,y = comp_shares
+<<<<<<< HEAD
+	d = N-(x-y) if x-y <0 else x-y
+	# d = x-y
+=======
 	d = add(self_pid, socket_list, (x,neg(y,N)), N)[1]
 	x,y = x[1], y[1]
+>>>>>>> 6c967d17affef5538c583105e4abcc9d9dfe4a7a
 
 	A,B = act_parties # index of contributing parties
 	party_A = socket_list[A-1]
@@ -212,22 +197,6 @@ def test_equality_once(self_pid, socket_list, comp_shares, t, N, nB, act_parties
 	return (self_pid, fin_share)
 
 
-
-def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties, iters):
-	'''
-	test equality repeatedly of two shared secrets to reduce probability of false positives, probabilty of false positives is 1/2^iters
-	@arg		: self party id, list of party sockets, tuple of shares to be compared, prime base,
-				  share size, pids of contributing parties, number of test_equality_once iterations
-	@returns 	: share of equality boolean x==y
-	'''
-	eq_shares = []
-	for x in xrange(iters):
-		eq_shares.append(test_equality_once(self_pid, socket_list, comp_shares, t, N, nB, act_parties))
-
-	final_share = rec_mult(self_pid, socket_list, eq_shares, t, N, nB)
-	return final_share
-
-
 '''
  Implementation of Toft's comparison protocol
   @arg		: self party id, list of party sockets, tuple of shares to be compared, prime base,
@@ -246,7 +215,7 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 		# Return gt
 		return gt
 
-	# Note here that like equality testing, the roles of the active
+	# Note here that unlike equality testing, the roles of the active
 	# parties are not the same; the first is Alice, and the second is
 	# Bob
 	alice, bob = act_parties
@@ -341,7 +310,7 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	# Common steps carried out by all parties
 
 	# Check if r_top = c_top, store in boolean `b'
-	b = test_equality(self_pid, socket_list, [r_top, c_top], t, N, nB, act_parties, 10)
+	b = test_equality(self_pid, socket_list, [r_top, c_top], t, N, nB, act_parties)
 	# Compute c_tilde = b ? c_bot:c_top
 	c_tilde = add(self_pid, socket_list, [c_bot, neg(c_top, N)], N)
 	c_tilde = mult(self_pid, socket_list, [c_tilde, b], t, N, nB)

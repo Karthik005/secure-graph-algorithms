@@ -15,7 +15,7 @@ def share_secrets(secrets):
 	for x in secrets:
 		print "sharing secrect: "+str(x)
 		sh = ns.gen_shares(3, t, x, N)
-		print sh
+		print "shares: ",sh
 		ns.distribute_secret(sh, parties, 20)
 	return 
 
@@ -24,3 +24,7 @@ if __name__ == '__main__':
 	y = int(sys.argv[2])
 	share_secrets([x,y])
 
+
+	# a = int(sys.argv[3])
+	# b = int(sys.argv[4])
+	# share_secrets([x,y,a,b])

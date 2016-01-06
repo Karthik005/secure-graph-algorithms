@@ -43,6 +43,7 @@ def connection_phase():
 def int_to_bytes(x, n):
 	b = bytearray()
 	bytes_added = 0
+	x = int(x)
 	while x > 0:
 		b.append(x%256)
 		x = x >> 8

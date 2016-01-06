@@ -114,7 +114,17 @@ def reconstruct_secret(parties, self_share, self_pid, nB, N):
 	f = interpolate_poly(recvd_shares, N)
 	return f(0)
 
-
+def reconstruct_secret_recv_only(parties, self_share, self_pid, nB, N):
+	'''
+	reconstruct the secret by interpolating received shares only
+	@arg		: list of parties, share, pid, number of bytes, N
+	@returns	: list of shares
+	'''
+	recvd_shares = recv_shares(parties, nB)
+	recvd_shares[self_pid-1] = self_share
+	# print "received shares: ", recvd_shares
+	f = interpolate_poly(recvd_shares, N)
+	return f(0)
 
 
 
