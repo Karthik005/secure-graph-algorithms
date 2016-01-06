@@ -87,7 +87,8 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 
 	# generate self share
 	x_self,y_self = mult_shares[0][1], mult_shares[1][1]
-	z_self = (self_pid, (x_self*y_self)%N) 
+	prod = x_self * y_self % N
+	z_self = (self_pid, prod)
 
 	# print "z val: ", z_self
 	#randomisation step
@@ -103,7 +104,7 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	# print "coeff_arr: ", coeff_arr
 	self_mult_share = np.dot(h_recvd_vals, coeff_arr)
 
-	return (self_pid, self_mult_share)
+	return (self_pid, self_mult_share % N)
 
 
 
@@ -116,8 +117,8 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	'''
 	n = len(socket_list)
 	x,y = comp_shares
+	d = add(self_pid, socket_list, (x,neg(y,N)), N)[1]
 	x,y = x[1], y[1]
-	d = x-y
 
 	A,B = act_parties # index of contributing parties
 	party_A = socket_list[A-1]
@@ -136,10 +137,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 		r_a = nr.recv_share(party_A, nB)
 		r_b = nr.recv_share(party_B, nB)
 
-	# print r_a, r_b
-
-
-	r = mult(self_pid, socket_list, ((self_pid, r_a), (self_pid, r_b)), t, N, nB)[1]
+	r = mult(self_pid, socket_list, [(self_pid, r_a), (self_pid, r_b)], t, N, nB)[1]
 
 	# obtain random input s
 	if self_pid == B:
@@ -190,7 +188,7 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties):
 	j_fin = mult(self_pid, socket_list, ((self_pid, j_u), (self_pid, j_s)), t, N, nB)[1]
 	j_tilde = add(self_pid, socket_list, ((None,j_fin), (None,1)), N)[1]
 
-	fin_share = j_tilde
+	fin_share = j_tilde * mmh.find_inv_mod(2, N) % N
 	return (self_pid, fin_share)
 
 
@@ -209,10 +207,8 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 		# `gt' encodes x > y
 		gt = mult(self_pid, socket_list, comp_shares, t, N, nB)
 		gt = add(self_pid, socket_list, [x, neg(gt, N)], N)
-		# `eq' encodes x == y NOTE: Improve this!
-		eq = test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties)
-		# Return gt*eq
-		return mult(self_pid, socket_list, [gt, eq], t, N, nB)
+		# Return gt
+		return gt
 
 	# Note here that unlike equality testing, the roles of the active
 	# parties are not the same; the first is Alice, and the second is
@@ -264,7 +260,7 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 		#c_own = (add(self_pid, socket_list, [(self_pid, r), x, neg(y, N)], N)[1] + 2**l) % N
 		c_own = add(self_pid, socket_list, [z,(None,r)], N)[1]
 		# Reconstruct `c'
-		c = nr.reconstruct_secret(socket_list, (self_pid, c_own), self_pid, nB, N)
+		c = nr.reconstruct_secret_recv_only(socket_list, (self_pid, c_own), self_pid, nB, N)
 		# Find c_bar, c_bot and c_top and share them
 		c_bar = c % (2**l)
 		c_bar_sh = ss.gen_shares(n, t, c_bar, N)
@@ -323,7 +319,8 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	u = 1 - compare(self_pid, socket_list, [c_tilde, r_tilde], t, N, nB, act_parties, l/2)[1]
 
 	# Last few steps, local
-	z_bar = add(self_pid, socket_list, [c_bar, neg(r_bar, N), (None, (2**l)*u)], N)
-	z_l = add(self_pid, socket_list, [z, z_bar], N) * mmh.find_inv_mod(2**l, N)
+	z_bar = add(self_pid, socket_list, [c_bar, neg(r_bar, N), (None, (2**l)*u % N)], N)
+	z_l = add(self_pid, socket_list, [z, neg(z_bar, N)], N)
+	z_l = (z_l[0], z_l[1] * mmh.find_inv_mod(2**l, N) % N)
 
 	return z_l
