@@ -6,6 +6,7 @@ import sys, socket
 from shamir_sharing import *
 from net_share import int_to_bytes
 from time import sleep
+from math import log, ceil
 
 '''
  Function to connect to the dealer on port = p_id
@@ -176,7 +177,9 @@ if __name__ == '__main__':
 	p_id = int(sys.argv[2])
 	r = int(sys.argv[3])
 	c = int(sys.argv[4])
-	nB = 20
+	#N = 110566836484895734954398231583463152069845275179779537530039974333624866315077
+	N = 4190502817
+	nB = int(ceil(log(N)/log(2)))
 	
 	dealer = connect_to_dealer(d_ip, p_id)
 	G_sh = recv_graph(dealer, r, c, nB)
@@ -195,7 +198,6 @@ if __name__ == '__main__':
 	#print parties
 
 	print 'Reconstruct graph ovver the network'
-	N = 104059
 	G = reconstruct_graph(parties, G_sh, p_id, nB, N)
 
 	for m in G:
