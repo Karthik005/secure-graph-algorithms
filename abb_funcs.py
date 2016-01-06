@@ -361,3 +361,20 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	z_l = (z_l[0], z_l[1] * mmh.find_inv_mod(2**l, N) % N)
 
 	return z_l
+
+'''
+ Function to check whether the secret shared value contains boolean semantic
+ or not
+  @arg		: party ID, list of sockets, share to be checked, t, modulus,
+  		  size of share, active parties for comparison
+  @returns	: secret shared boolean value
+'''
+def is_boolean(self_pid, socket_list, x, t, N, nB, act_parties):
+	# Check if the given value is zero
+	is_0 = test_equality(self_pid, socket_list, [x,(self_pid,0)], t, N, nB, act_parties, 10)
+	# Check if the given value is one
+	is_1 = test_equality(self_pid, socket_list, [x,(self_pid,1)], t, N, nB, act_parties, 10)
+	# As is_0 and is_1 are exclusive, adding them will be at most 1
+	# Their sum will be zero iff `x' is not boolean
+	ans = add(self_pid, socket_list, [is_0, is_1], N)
+	return ans

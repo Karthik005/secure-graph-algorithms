@@ -71,6 +71,17 @@ def test_abb_inequality(dealer_ip, self_pid, party_ips, t, act_parties, nB = 20)
 	print "comparison done"
 	ans = nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
 	print "x >= y:", ans
+
+def test_abb_boolean(dealer_ip, self_pid, party_ips, t, act_parties, nB):
+	dealer_conn = nr.connect_to_dealer(dealer_ip, self_pid)
+	party_conns = nr.connect_to_parties(self_pid, party_ips)
+	x_share = (self_pid, nr.recv_share(dealer_conn, nB))
+	y_share = (self_pid, nr.recv_share(dealer_conn, nB))
+	z_share = abb.is_boolean(self_pid, party_conns, x_share, t, N, nB, act_parties)
+	print "First value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
+	z_share = abb.is_boolean(self_pid, party_conns, y_share, t, N, nB, act_parties)
+	print "Second value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
+	
 	
 if __name__ == '__main__':
 	ip = []
@@ -79,7 +90,8 @@ if __name__ == '__main__':
 	act_parties = (int(sys.argv[3]), int(sys.argv[4]))
 	nB = int(ceil(log(N) / log(2)))
 	while 1:
-		test_abb_inequality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+		test_abb_boolean(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+		#test_abb_inequality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
 		#test_abb_equality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
 		# test_abb_rec_mult(sys.argv[1], int(sys.argv[2]), ip, 1)
 		#test_abb_mult(sys.argv[1], int(sys.argv[2]), ip, 1, nB)
