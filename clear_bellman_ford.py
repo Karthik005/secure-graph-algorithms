@@ -15,12 +15,13 @@ if __name__ == '__main__':
 
 	d[s] = 0
 
-	for i in range(0, len(G)):
-		for e in range(0, len(G)):
-			y = d[e] - d[i] + G[e][i]
-			x = (y+2**l) < 2**l
-			d[i] = d[i] + x*y
-			p[i] = (1-x)*p[i] + x*e
+	for j in range(0, len(G)):
+		for i in range(0, len(G)):
+			for e in range(0, len(G)):
+				y = d[e] - d[i] + G[e][i]
+				x = (y+2**l) < 2**l
+				d[i] = d[i] + x*y
+				p[i] = (1-x)*p[i] + x*e
 	
 	print 'Distances:', d
 	print 'Predecessors:', p

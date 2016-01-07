@@ -28,11 +28,11 @@ def update_element(self_pid, socket_list, l, i, x, t, N):
 	return l
 
 
-def secure_bellman_ford(self_pid, socket_list, G, src_v_ind, init_party_id, N, t = 1):
+def secure_bellman_ford(self_pid, socket_list, G, src_v_ind, init_party_id, N, t, check_err):
 	'''
 	find shortest paths to all vertices from source vertex, find predecessors along path
 	@arg		: self party id, list of party sockets, shared graph, initializer party to distribute shares of 0 and T
-				  share of source vertex id, share of val
+				  share of source vertex id, share of val, check for errors
 	@return 	: shared predecessors, shared shortest paths
 	'''
 	V_num = len(G[0])
@@ -98,8 +98,8 @@ def secure_bellman_ford(self_pid, socket_list, G, src_v_ind, init_party_id, N, t
 				print nr.reconstruct_secret(socket_list, y, self_pid, nB, N),
 				y_t = (y[0], y[1]+256 % N)
 				x = abb.compare(self_pid, socket_list, (threshold, y_t), t, N, nB, (1,2), 8)
-				#err = 
-				#error_vec.append(abb.is_boolean(self_pid, socket_list, x, t, N, nB, (1,2)))
+				if check_err:
+					error_vec.append(abb.is_boolean(self_pid, socket_list, x, t, N, nB, (1,2)))
 				x_y = abb.mult(self_pid, socket_list, (y,x), t, N, nB)
 
 				print nr.reconstruct_secret(socket_list, x, self_pid, nB, N),
@@ -114,8 +114,11 @@ def secure_bellman_ford(self_pid, socket_list, G, src_v_ind, init_party_id, N, t
 				print nr.reconstruct_secret(socket_list, p[j], self_pid, nB, N),
 				print "iter:", i, j, k, "=>", i*(V_num**2)+j*V_num+k+1, "/", V_num**3
 
-	#error_bool_sh = abb.rec_mult(self_pid, socket_list, error_vec, t, N, nB)
-	error_bool_sh = (self_pid, 0)
+	if check_err:
+		error_bool_sh = abb.rec_mult(self_pid, socket_list, error_vec, t, N, nB)
+	else:
+		error_bool_sh = 1
+	#error_bool_sh = (self_pid, 0)
 
 	return p, d, error_bool_sh
 
