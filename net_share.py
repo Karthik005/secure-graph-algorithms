@@ -76,10 +76,13 @@ def distribute_secret(sh, parties, no_of_bytes):
 def share_graph(G):
 	t = 1
 	#N = 110566836484895734954398231583463152069845275179779537530039974333624866315077
-	N = 4190502817
-	nB = int(ceil(log(N)/log(2)))
+	#N = 4190502817
+	N = 104059
+	nB = int(ceil(log(N)/(8*log(2))))
 	# Create sockets
 	parties = connection_phase()
+	for p in parties:
+		p.send(int_to_bytes(len(G), 1))
 	for row in G:
 		for val in row:
 			# Create list of shares for this value
@@ -90,5 +93,5 @@ def share_graph(G):
 
 if __name__ == '__main__':
 	# Read the adjacency matrix from the graph file
-	G = [[int(val) for val in line.split()] for line in open('graph')]
+	G = [[int(val) for val in line.split()] for line in open('graph_4')]	
 	share_graph(G)

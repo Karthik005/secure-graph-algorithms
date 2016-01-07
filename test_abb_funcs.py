@@ -9,6 +9,7 @@ import net_share as ns
 import sys 
 from time import sleep 
 from math import log, ceil
+from secure_bellman_ford import *
 
 # globals
 N = 104059
@@ -81,16 +82,28 @@ def test_abb_boolean(dealer_ip, self_pid, party_ips, t, act_parties, nB):
 	print "First value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
 	z_share = abb.is_boolean(self_pid, party_conns, y_share, t, N, nB, act_parties)
 	print "Second value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
+
+def test_bf(dealer_ip, pid, party_ip, s, N, t, nB):
+	dealer = nr.connect_to_dealer(dealer_ip, pid)
+	parties = nr.connect_to_parties(pid, party_ip)
+	G = nr.recv_graph(dealer, nB)
+	print nr.reconstruct_graph(parties, G, pid, nB, N)
+	s_ind = [0 for i in range(0, len(G))]
+	s_ind[s] = 1
+	p_sh, d_sh, err_sh = secure_bellman_ford(pid, parties, G, s_ind, 1, N, t)
+	p, d, err = reconstruct_preds_dists(pid, parties, p_sh, d_sh, err_sh, N)
+	print p, d, err
 	
 	
 if __name__ == '__main__':
 	ip = []
 	for i in open('addresses'):
 		ip.append(i[:-1])
-	act_parties = (int(sys.argv[3]), int(sys.argv[4]))
-	nB = int(ceil(log(N) / log(2)))
-	while 1:
-		test_abb_boolean(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+	#act_parties = (int(sys.argv[3]), int(sys.argv[4]))
+	nB = int(ceil(log(N) / (log(2)*8)))
+	#while 1:
+	test_bf(sys.argv[1], int(sys.argv[2]), ip, 0, N, 1, nB)
+	#test_abb_boolean(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
 		#test_abb_inequality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
 		#test_abb_equality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
 		# test_abb_rec_mult(sys.argv[1], int(sys.argv[2]), ip, 1)

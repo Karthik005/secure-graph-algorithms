@@ -160,8 +160,11 @@ def reconstruct_graph(parties, G_sh, p_id, nB, N):
   @arg		: dealer socket, rows, columns, no of bytes
   @returns	: secret share of graph
 '''
-def recv_graph(dealer, rows, columns, nB):
+def recv_graph(dealer, nB):
 	G = []
+	dim = recv_share(dealer, 1)
+	print dim
+	rows = columns = dim
 	for m in range(0, rows):
 		row = []
 		for n in range(0, columns):

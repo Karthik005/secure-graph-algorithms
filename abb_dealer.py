@@ -16,7 +16,7 @@ def share_secrets(secrets):
 	N = 4190502817
 	N = 104059
 	#N = 36209
-	nB = int(ceil(log(N)/log(2)))
+	nB = int(ceil(log(N)/(8*log(2))))
 	# Create sockets
 	parties = ns.connection_phase()
 	for x in secrets:
