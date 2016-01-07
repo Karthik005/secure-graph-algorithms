@@ -1,5 +1,7 @@
 import sys
 from math import log
+import mod_math_helpers as mmh
+from random import randrange
 import os
 
 def rand_prime(n):
@@ -63,23 +65,21 @@ def interpolate_poly(sh, N):
 			for shr in other_sh:
 				# NOTE: Since finding modulo inverse takes a while,
 				# floating point arithmetic is used as an approximation
-				term = term * float((a-shr[0])) / (s[0]-shr[0])
+				term = term * (a-shr[0]) * mmh.find_inv_mod(s[0]-shr[0], N) % N
 			terms.append(term)
 		return sum(terms) % N
 	return inner_poly
 
-
-# Test the sharing scheme for all numbers until any prime N
-'''
-t = 3
-N = 104059
-offset = 2
-for i in range(0, N):
-	secret = i
-	sh = gen_shares(6, t, secret, N)
-	f = interpolate_poly(sh[offset:t+1+offset], N)
-	if f(0) == secret:
-		print "PASS", f(0)
-	else:
-		print "FAIL, " + str(i) + ", " + str(f(0)) + ", " + str(f(0)-i)
-'''
+if __name__ == '__main__':
+	# Test the sharing scheme for all numbers until any prime N
+	t = 3
+	N = 110566836484895734954398231583463152069845275179779537530039974333624866315077
+	offset = 2
+	for i in range(N/4, N/4 + 5):
+		secret = i
+		sh = gen_shares(6, t, secret, N)
+		f = interpolate_poly(sh[offset:t+1+offset], N)
+		if f(0) == secret:
+			print "PASS", f(0)
+		else:
+			print "FAIL, " + str(i) + ", " + str(f(0)) + ", " + str(f(0)-i)

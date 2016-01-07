@@ -7,6 +7,7 @@
 
 import sys, socket
 from shamir_sharing import *
+from math import ceil, log
 
 '''
  Function to read IP addresses from stdin and return a list of bound sockets
@@ -74,7 +75,9 @@ def distribute_secret(sh, parties, no_of_bytes):
 '''
 def share_graph(G):
 	t = 1
-	N = 104059
+	#N = 110566836484895734954398231583463152069845275179779537530039974333624866315077
+	N = 4190502817
+	nB = int(ceil(log(N)/log(2)))
 	# Create sockets
 	parties = connection_phase()
 	for row in G:
@@ -83,7 +86,7 @@ def share_graph(G):
 			sh = gen_shares(3, t, val, N)
 			# Send these shares to the parties
 			#NOTE: change no. of bytes, corresponding to N
-			distribute_secret(sh, parties, 20)
+			distribute_secret(sh, parties, nB)
 
 if __name__ == '__main__':
 	# Read the adjacency matrix from the graph file

@@ -8,9 +8,15 @@ import net_recv as nr
 import net_share as ns
 import sys 
 from time import sleep 
+from math import log, ceil
 
 # globals
 N = 104059
+#N = 110566836484895734954398231583463152069845275179779537530039974333624866315077
+#N = 314853400076558016540142136275780708481
+#N = 13317897048299897509
+#N = 4190502817
+#N = 36209
 # --------
 
 def test_abb_add(dealer_ip, self_pid, party_ips, t, nB = 20):
@@ -61,16 +67,31 @@ def test_abb_inequality(dealer_ip, self_pid, party_ips, t, act_parties, nB = 20)
 	party_conns = nr.connect_to_parties(self_pid, party_ips)
 	x_share = (self_pid, nr.recv_share(dealer_conn, nB))
 	y_share = (self_pid, nr.recv_share(dealer_conn, nB))
-	z_share = abb.compare(self_pid, party_conns, (x_share, y_share), t, N, nB, act_parties, 4)
+	z_share = abb.compare(self_pid, party_conns, (x_share, y_share), t, N, nB, act_parties, 8)
 	print "comparison done"
 	ans = nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
-	print "x > y:", ans
+	print "x >= y:", ans
+
+def test_abb_boolean(dealer_ip, self_pid, party_ips, t, act_parties, nB):
+	dealer_conn = nr.connect_to_dealer(dealer_ip, self_pid)
+	party_conns = nr.connect_to_parties(self_pid, party_ips)
+	x_share = (self_pid, nr.recv_share(dealer_conn, nB))
+	y_share = (self_pid, nr.recv_share(dealer_conn, nB))
+	z_share = abb.is_boolean(self_pid, party_conns, x_share, t, N, nB, act_parties)
+	print "First value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
+	z_share = abb.is_boolean(self_pid, party_conns, y_share, t, N, nB, act_parties)
+	print "Second value: ", nr.reconstruct_secret(party_conns, z_share, self_pid, nB, N)
+	
 	
 if __name__ == '__main__':
 	ip = []
 	for i in open('addresses'):
 		ip.append(i[:-1])
 	act_parties = (int(sys.argv[3]), int(sys.argv[4]))
-	# test_abb_rec_mult(sys.argv[1], int(sys.argv[2]), ip, 1)
-	# test_abb_inequality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties)
-	test_abb_equality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties)
+	nB = int(ceil(log(N) / log(2)))
+	while 1:
+		test_abb_boolean(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+		#test_abb_inequality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+		#test_abb_equality(sys.argv[1], int(sys.argv[2]), ip, 1, act_parties, nB)
+		# test_abb_rec_mult(sys.argv[1], int(sys.argv[2]), ip, 1)
+		#test_abb_mult(sys.argv[1], int(sys.argv[2]), ip, 1, nB)

@@ -1,0 +1,3 @@
+* Replace recursive multiplication with fan-out
+
+* Better comparison protocol: some kind of clear-reconstruction stage? bitwise

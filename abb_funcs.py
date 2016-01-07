@@ -231,28 +231,31 @@ def test_equality(self_pid, socket_list, comp_shares, t, N, nB, act_parties, ite
 '''
  Implementation of Toft's comparison protocol
   @arg		: self party id, list of party sockets, tuple of shares to be compared, prime base,
-  		  share size, pids of contributing parties
+  		  share size, pids of Alice and Bob, l parameter
   @returns	: secret share of boolean output x > y
 '''
 def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	x, y = comp_shares
 	n = len(socket_list)
-	print comp_shares, l
 	# Check if comparing single bit values. If so, answer is trivial
 	if l == 1:
 		# `gt' encodes x > y
-		gt = mult(self_pid, socket_list, comp_shares, t, N, nB)
-		gt = add(self_pid, socket_list, [x, neg(gt, N)], N)
-		# Return gt
-		return gt
+		xy = mult(self_pid, socket_list, comp_shares, t, N, nB)
+		gt = add(self_pid, socket_list, [x, neg(xy, N)], N)
+		# `eq' encodes x == y by calculating xy + (1-x)(1-y)
+		neg_x = (self_pid, (1 - x[1]) % N)
+		neg_y = (self_pid, (1 - y[1]) % N)
+		eq = mult(self_pid, socket_list, (neg_x, neg_y), t, N, nB)
+		eq = add(self_pid, socket_list, (eq, xy), N)
+		# Return gt_eq = gt | eq , calculated as x+y-xy
+		gt_eq = mult(self_pid, socket_list, (eq, gt), t, N, nB)
+		gt_eq = add(self_pid, socket_list, [gt, eq, gt_eq], N)
+		return gt_eq
 
 	# Note here that like equality testing, the roles of the active
 	# parties are not the same; the first is Alice, and the second is
 	# Bob
 	alice, bob = act_parties
-	# Choose `l' to be the power of 2 having half the bits of N
-	#l = 2**(log(N) / (2*log(2))
-	#l = 2**2 % N
 	z = add(self_pid, socket_list, [(None,2**l), x, neg(y,N)], N)
 	if self_pid == bob:
 		# Choose random r
@@ -293,7 +296,6 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 		# Receive share of `r' from Bob
 		r = nr.recv_share(socket_list[bob-1], nB)
 		# Calculate own share of `c'
-		#c_own = (add(self_pid, socket_list, [(self_pid, r), x, neg(y, N)], N)[1] + 2**l) % N
 		c_own = add(self_pid, socket_list, [z,(None,r)], N)[1]
 		# Reconstruct `c'
 		c = nr.reconstruct_secret_recv_only(socket_list, (self_pid, c_own), self_pid, nB, N)
@@ -326,7 +328,6 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 		# Receive share of `r' from Bob
 		r = nr.recv_share(socket_list[bob-1], nB)
 		# Calculate own share of `c' and send to Alice
-		#c = (add(self_pid, socket_list, [(self_pid, r), x, neg(y, N)], N)[1] + 2**l) % N
 		c = add(self_pid, socket_list, [z,(None,r)], N)[1]
 		nr.send_share([socket_list[alice-1]], c, nB)
 		# Receive shares of r_bar, _bot, _top
@@ -352,7 +353,7 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	r_tilde = add(self_pid, socket_list, [r_tilde, r_top], N)
 
 	# Compute u = 1 - (c_tilde>=r_tilde) recursively
-	u = 1 - compare(self_pid, socket_list, [c_tilde, r_tilde], t, N, nB, act_parties, l/2)[1]
+	u = (1 - compare(self_pid, socket_list, [c_tilde, r_tilde], t, N, nB, act_parties, l/2)[1]) % N
 
 	# Last few steps, local
 	z_bar = add(self_pid, socket_list, [c_bar, neg(r_bar, N), (None, (2**l)*u % N)], N)
@@ -360,3 +361,20 @@ def compare(self_pid, socket_list, comp_shares, t, N, nB, act_parties, l):
 	z_l = (z_l[0], z_l[1] * mmh.find_inv_mod(2**l, N) % N)
 
 	return z_l
+
+'''
+ Function to check whether the secret shared value contains boolean semantic
+ or not
+  @arg		: party ID, list of sockets, share to be checked, t, modulus,
+  		  size of share, active parties for comparison
+  @returns	: secret shared boolean value
+'''
+def is_boolean(self_pid, socket_list, x, t, N, nB, act_parties):
+	# Check if the given value is zero
+	is_0 = test_equality(self_pid, socket_list, [x,(self_pid,0)], t, N, nB, act_parties, 10)
+	# Check if the given value is one
+	is_1 = test_equality(self_pid, socket_list, [x,(self_pid,1)], t, N, nB, act_parties, 10)
+	# As is_0 and is_1 are exclusive, adding them will be at most 1
+	# Their sum will be zero iff `x' is not boolean
+	ans = add(self_pid, socket_list, [is_0, is_1], N)
+	return ans
