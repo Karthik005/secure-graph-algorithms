@@ -117,7 +117,7 @@ def secure_bellman_ford(self_pid, socket_list, G, src_v_ind, init_party_id, N, t
 	if check_err:
 		error_bool_sh = abb.rec_mult(self_pid, socket_list, error_vec, t, N, nB)
 	else:
-		error_bool_sh = 1
+		error_bool_sh = (self_pid, 1)
 	#error_bool_sh = (self_pid, 0)
 
 	return p, d, error_bool_sh

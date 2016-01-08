@@ -90,7 +90,7 @@ def test_bf(dealer_ip, pid, party_ip, s, N, t, nB):
 	print nr.reconstruct_graph(parties, G, pid, nB, N)
 	s_ind = [0 for i in range(0, len(G))]
 	s_ind[s] = 1
-	p_sh, d_sh, err_sh = secure_bellman_ford(pid, parties, G, s_ind, 1, N, t, True)
+	p_sh, d_sh, err_sh = secure_bellman_ford(pid, parties, G, s_ind, 1, N, t, False)
 	p, d, err = reconstruct_preds_dists(pid, parties, p_sh, d_sh, err_sh, N)
 	print p, d, err
 	

@@ -93,5 +93,5 @@ def share_graph(G):
 
 if __name__ == '__main__':
 	# Read the adjacency matrix from the graph file
-	G = [[int(val) for val in line.split()] for line in open('graph_2')]	
+	G = [[int(val) for val in line.split()] for line in open('graph_4')]	
 	share_graph(G)
