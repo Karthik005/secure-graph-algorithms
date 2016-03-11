@@ -92,6 +92,9 @@ def share_graph(G):
 			distribute_secret(sh, parties, nB)
 
 if __name__ == '__main__':
+	if len(sys.argv) == 1:
+		print "Usage: ", sys.argv[0], "<name of the graph file>"
+		sys.exit(1)
 	# Read the adjacency matrix from the graph file
-	G = [[int(val) for val in line.split()] for line in open('graph_4')]	
+	G = [[int(val) for val in line.split()] for line in open(sys.argv[1])]	
 	share_graph(G)
