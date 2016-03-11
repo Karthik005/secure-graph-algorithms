@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Author: karthik
+# @Author: Karthik and Yashvanth
 # @Date:   2016-01-02 19:30:08
 
 '''
@@ -16,13 +16,6 @@ from random import randint
 from libnum import jacobi
 from math import log, floor
 
-# def signal_done_proc(prev_party,nxt_party, sig):
-# 	if prev_party:
-# 		recvd = soh.recv_sig(prev_party)
-# 		if recvd == sig:
-# 			if nxt_party:
-# 				soh.send_sig(nxt_party, sig)
-# 			return
 
 '''
  Function to simply negate a share
@@ -43,10 +36,6 @@ def add(self_pid, socket_list, addend_shares, N):
 	num_parties = len(socket_list)
 	sum_of_shares = sum([addend_share[1] for addend_share in addend_shares])%N
 
-	# done_msg = "ADDDONE"
-	# nxt_party = socket_list[self_pid] if self_pid < num_parties else None
-	# prev_party = socket_list[self_pid-1] if self_pid != 1 else None
-
 	return (self_pid, sum_of_shares)
 
 
@@ -65,14 +54,8 @@ def gen_coeff_arr(n, N):
 	@arg		: number of parties, number of corrupted parites (max)
 	@returns 	: degree reduction array
 	'''
-	# trunc_arr = np.concatenate((np.ones(t),np.zeros(n-t)))
-	# print B
-	# print B_inv
-	# red_arr = np.dot(np.dot(B,trunc_arr),B_inv)
-	# return red_arr
 	B = gen_vandermonde(n)
 	B_inv = mmh.find_inv_mat(B, N)
-	# print np.array(B_inv[0])
 	return (np.array(B_inv[0])).flatten()
 
 	
@@ -90,7 +73,6 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	prod = x_self * y_self % N
 	z_self = (self_pid, prod)
 
-	# print "z val: ", z_self
 	#randomisation step
 	h_shares = ss.gen_shares(n, t, z_self[1], N)
 	ns.distribute_secret(h_shares, socket_list, nB)
@@ -101,7 +83,6 @@ def mult(self_pid, socket_list, mult_shares, t, N, nB):
 	h_recvd_vals = np.array(h_recvd_shares_vals)
 	coeff_arr = gen_coeff_arr(n,N)
 
-	# print "coeff_arr: ", coeff_arr
 	self_mult_share = np.dot(h_recvd_vals, coeff_arr)
 
 	return (self_pid, self_mult_share % N)
